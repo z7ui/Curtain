@@ -18,6 +18,11 @@ public class CurtainService extends Service {
     public static final String ACTION_HIDE = "com.example.curtain.HIDE";
     public static boolean isRunning = false;
 
+    // 与 LSPosed 模块通信的广播
+    private static final String ACTION_SYSTEM_BAR = "com.example.curtain.STATUS_BAR_CONTROL";
+    private static final String EXTRA_HIDE = "hide";
+    private static final String TARGET_SYSTEMUI = "com.android.systemui";
+
     private WindowManager wm;
     private CurtainOverlayView overlayView;
 
@@ -73,6 +78,9 @@ public class CurtainService extends Service {
 
         wm.addView(overlayView, params);
         isRunning = true;
+
+        // 通知 LSPosed 模块隐藏状态栏和导航栏
+        notifySystemBar(true);
     }
 
     private void hideOverlay() {
@@ -81,10 +89,28 @@ public class CurtainService extends Service {
             overlayView = null;
         }
         isRunning = false;
+
+        // 通知 LSPosed 模块恢复状态栏和导航栏
+        notifySystemBar(false);
+    }
+
+    /**
+     * 给 LSPosed 模块发广播，控制状态栏/导航栏显隐
+     */
+    private void notifySystemBar(boolean hide) {
+        try {
+            Intent intent = new Intent(ACTION_SYSTEM_BAR);
+            intent.putExtra(EXTRA_HIDE, hide);
+            intent.setPackage(TARGET_SYSTEMUI);
+            sendBroadcast(intent);
+        } catch (Throwable ignored) {
+        }
     }
 
     @Override
     public void onDestroy() {
+        // 保险：Service 被销毁时也恢复状态栏
+        notifySystemBar(false);
         hideOverlay();
         super.onDestroy();
     }
