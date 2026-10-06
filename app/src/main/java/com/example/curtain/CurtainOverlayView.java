@@ -9,9 +9,11 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.BatteryManager;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.LayoutInflater;
@@ -22,15 +24,17 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 public class CurtainOverlayView extends FrameLayout {
 
     public interface OnExitListener { void onExit(); }
 
-    // 级别 0-4 对应边缘的 alpha，差别拉大
-    private static final int[] EDGE_ALPHA = {110, 150, 190, 230, 255};
+    // 级别 0-4 对应边缘 alpha
+    private static final int[] EDGE_ALPHA = {60, 110, 160, 200, 235};
 
     private static final long[] TIMEOUTS_MS = {15_000, 30_000, 60_000, 120_000,
             300_000, 600_000, 1800_000, Long.MAX_VALUE};
@@ -38,7 +42,7 @@ public class CurtainOverlayView extends FrameLayout {
             "5 分钟", "10 分钟", "30 分钟", "从不"};
 
     private View topBar, quickStatus, lockContainer;
-    private TextView tvTime, tvDate, tvBattery, tvLevel, tvTimeout, tvHint;
+    private TextView tvTime, tvDate, tvBattery, tvLevel, tvTimeout, tvHint, tvGestureHint;
     private ImageView ivLock;
 
     private int level;
@@ -73,16 +77,17 @@ public class CurtainOverlayView extends FrameLayout {
     private void init(Context context) {
         LayoutInflater.from(context).inflate(R.layout.curtain_overlay, this, true);
 
-        topBar        = findViewById(R.id.top_bar);
-        quickStatus   = findViewById(R.id.quick_status);
-        lockContainer = findViewById(R.id.lock_container);
-        tvTime        = findViewById(R.id.tv_time);
-        tvDate        = findViewById(R.id.tv_date);
-        tvBattery     = findViewById(R.id.tv_battery);
-        tvLevel       = findViewById(R.id.tv_level);
-        tvTimeout     = findViewById(R.id.tv_timeout);
-        tvHint        = findViewById(R.id.tv_hint);
-        ivLock        = findViewById(R.id.iv_lock);
+        topBar         = findViewById(R.id.top_bar);
+        quickStatus    = findViewById(R.id.quick_status);
+        lockContainer  = findViewById(R.id.lock_container);
+        tvTime         = findViewById(R.id.tv_time);
+        tvDate         = findViewById(R.id.tv_date);
+        tvBattery      = findViewById(R.id.tv_battery);
+        tvLevel        = findViewById(R.id.tv_level);
+        tvTimeout      = findViewById(R.id.tv_timeout);
+        tvHint         = findViewById(R.id.tv_hint);
+        tvGestureHint  = findViewById(R.id.tv_gesture_hint);
+        ivLock         = findViewById(R.id.iv_lock);
 
         prefs = context.getSharedPreferences("curtain", Context.MODE_PRIVATE);
         level = prefs.getInt("level", 4);
@@ -99,12 +104,10 @@ public class CurtainOverlayView extends FrameLayout {
         IntentFilter f = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
         context.registerReceiver(batteryReceiver, f);
 
-        // 监听 SharedPreferences 变化，从 MainActivity 改也即时生效
         prefs.registerOnSharedPreferenceChangeListener(prefListener);
 
         tvLevel.setOnClickListener(v -> {
             int next = (level + 1) % EDGE_ALPHA.length;
-            // 写进 prefs，监听器会自动同步 level 并刷新
             prefs.edit().putInt("level", next).apply();
             lastTouchTime = System.currentTimeMillis();
         });
@@ -155,7 +158,7 @@ public class CurtainOverlayView extends FrameLayout {
     }
 
     private void applyLevel() {
-        tvLevel.setText("级别 " + (level + 1)); // 显示 1~5
+        tvLevel.setText("级别 " + (level + 1));
         invalidate();
     }
 
@@ -177,6 +180,7 @@ public class CurtainOverlayView extends FrameLayout {
         topBar.setVisibility(GONE);
         quickStatus.setVisibility(GONE);
         lockContainer.setVisibility(GONE);
+        if (tvGestureHint != null) tvGestureHint.setVisibility(GONE);
         invalidate();
     }
 
@@ -186,6 +190,7 @@ public class CurtainOverlayView extends FrameLayout {
         topBar.setVisibility(VISIBLE);
         quickStatus.setVisibility(VISIBLE);
         lockContainer.setVisibility(VISIBLE);
+        if (tvGestureHint != null) tvGestureHint.setVisibility(VISIBLE);
         lastTouchTime = System.currentTimeMillis();
         invalidate();
     }
@@ -211,20 +216,41 @@ public class CurtainOverlayView extends FrameLayout {
 
         LinearGradient grad;
         if (w > h) {
-            // 横屏：左右边缘黑、中心淡
             grad = new LinearGradient(0, 0, w, 0,
                     new int[]{edgeColor, centerColor, centerColor, edgeColor},
-                    new float[]{0f, 0.35f, 0.65f, 1f},
-                    Shader.TileMode.CLAMP);
+                    new float[]{0f, 0.35f, 0.65f, 1f}, Shader.TileMode.CLAMP);
         } else {
-            // 竖屏：上下边缘黑、中心淡
             grad = new LinearGradient(0, 0, 0, h,
                     new int[]{edgeColor, centerColor, centerColor, edgeColor},
-                    new float[]{0f, 0.35f, 0.65f, 1f},
-                    Shader.TileMode.CLAMP);
+                    new float[]{0f, 0.35f, 0.65f, 1f}, Shader.TileMode.CLAMP);
         }
         paint.setShader(grad);
         canvas.drawRect(0, 0, w, h, paint);
+    }
+
+    /**
+     * 方案 2：告诉系统哪些区域不响应返回手势
+     */
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            int w = getWidth();
+            int h = getHeight();
+            if (w == 0 || h == 0) return;
+
+            List<Rect> rects = new ArrayList<>();
+            // 左右两侧各 30%，覆盖返回手势区
+            rects.add(new Rect(0, 0, (int)(w * 0.3f), h));
+            rects.add(new Rect((int)(w * 0.7f), 0, w, h));
+            // 底部 10%，覆盖上滑手势区
+            rects.add(new Rect(0, (int)(h * 0.9f), w, h));
+
+            try {
+                setSystemGestureExclusionRects(rects);
+            } catch (Throwable ignored) {}
+        }
     }
 
     @Override

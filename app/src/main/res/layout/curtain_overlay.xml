@@ -47,7 +47,7 @@
             android:text="电池 | 66%" />
     </LinearLayout>
 
-    <!-- 右侧快捷状态（点一下切换亮度/自动息屏） -->
+    <!-- 右侧快捷状态 -->
     <LinearLayout
         android:id="@+id/quick_status"
         android:layout_width="wrap_content"
@@ -102,4 +102,15 @@
             android:textSize="18sp"
             android:text="拖动锁定图标来解锁" />
     </LinearLayout>
+
+    <!-- 底部手势提示（方案 3） -->
+    <TextView
+        android:id="@+id/tv_gesture_hint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="40dp"
+        android:textColor="#66FFFFFF"
+        android:textSize="12sp"
+        android:text="系统手势仍可上滑返回桌面" />
 </FrameLayout>
