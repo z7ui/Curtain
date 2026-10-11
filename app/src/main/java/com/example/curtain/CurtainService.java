@@ -19,9 +19,14 @@ import androidx.core.app.NotificationCompat;
 /**
  * 降级后端：普通前台服务 + [WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY]。
  *
- * 不需要无障碍权限，只要「显示在其他应用上层」就能用。代价是**盖不住状态栏** ——
- * 这是系统限制（这种窗口的层级天生低于状态栏，而且系统会忽略它请求的系统 UI 可见性变更）。
- * 想要状态栏一起变黑，请去开无障碍服务，那时走的是 CurtainAccessibilityService。
+ * 不需要无障碍权限，只要「显示在其他应用上层」就能用。
+ *
+ * 状态栏：这种窗口的**层级**确实永远低于状态栏，我们盖不住它；
+ * 但可以让系统把它**藏起来** —— io.japp.blackscreen 只靠悬浮窗权限就做到了，
+ * 关键是窗口要有"代表屏幕"的资格（全屏 / 不透明 / 能拿焦点）。
+ *
+ * 本服务同时承担「抢焦点」和「不抢焦点」两种模式，区别只在窗口带不带
+ * FLAG_NOT_FOCUSABLE，详见 CurtainOverlay 的类注释和 wantFocus()。
  */
 public class CurtainService extends Service {
 
@@ -62,6 +67,7 @@ public class CurtainService extends Service {
         if (CurtainRouter.ACTION_REFRESH.equals(action)) {
             if (overlay != null) {
                 overlay.refresh();
+                overlay.rebuildIfNeeded();
             }
             return START_STICKY;
         }
@@ -78,6 +84,8 @@ public class CurtainService extends Service {
 
     private void showOverlay() {
         if (overlay != null && overlay.isShowing()) {
+            // 模式可能在主界面被改过（抢焦点 <-> 不抢焦点），窗口参数对不上就重建
+            overlay.rebuildIfNeeded();
             return;
         }
         if (!Settings.canDrawOverlays(this)) {

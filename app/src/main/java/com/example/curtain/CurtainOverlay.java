@@ -16,16 +16,37 @@ import androidx.annotation.NonNull;
 /**
  * 「把幕布盖到屏幕上」这件事本身，两条后端共用。
  *
- * 关键区别就在 windowType：
+ * ## 状态栏：重新拆过 io.japp.blackscreen 之后，结论改了
  *
- *  - [WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY] (2038)
- *      普通前台服务就能加。SDK 文档写得很明确：它在所有 Activity 之上，
- *      但**在状态栏、输入法这些关键系统窗口之下**，而且系统会忽略它请求的
- *      系统 UI 可见性变更。所以状态栏那排图标一定浮在幕布上面。
+ * Black Screen v2.0.7 **没有无障碍服务**（manifest 里只有通知监听、磁贴、JobService），
+ * 权限也只有 SYSTEM_ALERT_WINDOW，但它的全屏黑层同样是普通悬浮窗，
+ * 却能把状态栏一起弄黑。它唯一的动作是视图上的一句：
  *
- *  - [WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY] (2032)
- *      只有无障碍服务能加，属于「受信任覆盖层」，可以真正改变系统 UI 可见性，
- *      状态栏和导航栏能一起藏掉。
+ *     o21.setSystemUiVisibility(4102);
+ *     // 4102 = IMMERSIVE_STICKY(4096) | HIDE_NAVIGATION(2) | FULLSCREEN(4)
+ *
+ * 所以 SDK 那句"悬浮窗在状态栏之下"说的是**层级**（这点没错，我们确实画不到它上面），
+ * 但"系统会忽略悬浮窗的系统 UI 可见性变更"并不成立 —— 能不能藏掉系统栏，
+ * 看的是这个窗口有没有资格**代表屏幕**。对照它的窗口参数：
+ *
+ *     width/height = MATCH_PARENT            → 全屏
+ *     format       = PixelFormat.RGBA_8888   → 不透明
+ *     flags        = LAYOUT_IN_SCREEN | LAYOUT_NO_LIMITS
+ *                    （注意 **没有** FLAG_NOT_FOCUSABLE）→ 它就是焦点窗口
+ *
+ * 三条都满足，系统才采纳它的 FULLSCREEN 去藏系统栏；而它自己是不透明全屏的，
+ * 藏掉之后状态栏那一条照样是黑的，于是看起来"整屏全黑"。
+ *
+ * 我们原来照抄 FakeStandby 的参数，里面带着 FLAG_NOT_FOCUSABLE，
+ * 又因为幕布是渐变半透明而必须用 PixelFormat.TRANSLUCENT ——
+ * 这两条正好让它失去"代表屏幕"的资格，沉浸请求就被无视了。
+ * 于是普通悬浮窗默认**不带 FLAG_NOT_FOCUSABLE**（主界面里的「普通悬浮窗 · 抢焦点」）；
+ * 想不打扰后台应用就切「不抢焦点」，代价是状态栏又会浮在幕布上面。
+ * 无障碍覆盖层天生被信任，继续沿用 FakeStandby 的原参数（见 [buildParams]）。
+ *
+ * 代价：幕布期间后面的 app 会失去窗口焦点，个别视频/游戏会因此自动暂停。
+ * 还没验证：如果只去掉 NOT_FOCUSABLE 仍然藏不住状态栏，说明"不透明"也是硬条件，
+ * 那就只能在"渐变半透明幕布"和"藏掉状态栏"之间二选一了。
  *
  * 另外两点是从 FakeStandby 抄的细节：
  *  - flags 里同时给上 FLAG_FULLSCREEN / FLAG_TRANSLUCENT_STATUS / FLAG_TRANSLUCENT_NAVIGATION
@@ -46,6 +67,9 @@ public final class CurtainOverlay {
     private final OnExitListener exitListener;
 
     private CurtainOverlayView view;
+
+    /** 当前这个窗口建的时候到底抢没抢焦点，用来判断模式变了要不要重建。 */
+    private boolean focusNeeded;
 
     public CurtainOverlay(@NonNull Context context, int windowType,
                           @NonNull OnExitListener exitListener) {
@@ -73,6 +97,7 @@ public final class CurtainOverlay {
         // 视图比屏幕大一圈，padding 得补回来，否则内容会贴边
         overlayView.setExtraEdgeInset(oversizePx());
         overlayView.setOnExitListener(() -> exitListener.onExit());
+        focusNeeded = wantFocus();
         try {
             windowManager.addView(overlayView, buildParams());
         } catch (Throwable t) {
@@ -87,15 +112,33 @@ public final class CurtainOverlay {
     }
 
     public void hide() {
-        if (view != null) {
-            try {
-                windowManager.removeView(view);
-            } catch (Throwable ignored) {
-                // 可能已经被移除了
-            }
-            view = null;
-        }
+        detach();
         CurtainPrefs.setRunning(context, false);
+    }
+
+    /**
+     * 模式变了（比如从「抢焦点」切到「不抢焦点」）就按新参数把窗口重建一次。
+     * 只在正在显示时有意义；没显示的话下次 show() 自然会用新参数。
+     */
+    public void rebuildIfNeeded() {
+        if (view == null || focusNeeded == wantFocus()) {
+            return;
+        }
+        detach();
+        show();
+    }
+
+    private void detach() {
+        CurtainOverlayView old = view;
+        view = null;
+        if (old == null) {
+            return;
+        }
+        try {
+            windowManager.removeViewImmediate(old);
+        } catch (Throwable ignored) {
+            // 可能已经被移除了
+        }
     }
 
     /** 偏好变了之后让幕布重新读一遍。 */
@@ -109,18 +152,36 @@ public final class CurtainOverlay {
         return (int) (OVERSIZE_DP * context.getResources().getDisplayMetrics().density);
     }
 
+    /**
+     * 这个窗口要不要抢焦点。
+     *
+     *  - 无障碍覆盖层：不要。它天生被信任，不抢焦点也会被采纳（FakeStandby 原参数）。
+     *  - 普通悬浮窗 + 「抢焦点」模式：要。系统才会理会它请求的沉浸模式。
+     *  - 普通悬浮窗 + 「不抢焦点」模式：不要。放弃状态栏，换回不打扰后台应用。
+     */
+    private boolean wantFocus() {
+        return windowType == WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+                && CurtainRouter.effectiveMode(context) == CurtainPrefs.MODE_OVERLAY_FOCUS;
+    }
+
     private WindowManager.LayoutParams buildParams() {
         DisplayMetrics dm = context.getResources().getDisplayMetrics();
         int oversize = oversizePx();
 
-        int flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+        int flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
                 | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
                 | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
                 | WindowManager.LayoutParams.FLAG_FULLSCREEN
                 | WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS
                 | WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION
                 | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
+
+        // 无障碍覆盖层天生受信任，不抢焦点系统也会采纳它的沉浸请求（FakeStandby 就这么用）；
+        // 普通悬浮窗必须反过来 —— 不带 NOT_FOCUSABLE 才能成为焦点窗口，详见类注释。
+        // 所以只有「要抢焦点」这一种情况才不加这个 flag。
+        if (!wantFocus()) {
+            flags |= WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+        }
 
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 dm.widthPixels + 2 * oversize,
@@ -146,7 +207,9 @@ public final class CurtainOverlay {
 
     /**
      * 请求隐藏系统栏。
-     * 对普通悬浮窗系统会直接忽略，对无障碍覆盖层才真正生效 —— 这就是双轨制的意义。
+     *
+     * 系统认不认这一句，取决于窗口有没有"代表屏幕"的资格（全屏 / 不透明 / 能拿焦点），
+     * 而不是 windowType 本身 —— 没资格时设了也是白设，详见类注释。
      */
     @SuppressWarnings("deprecation")
     private void applySystemUi(View target) {

@@ -10,6 +10,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.widget.Button;
+import android.widget.RadioGroup;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -43,8 +44,19 @@ public class MainActivity extends AppCompatActivity {
     private Button btnToggle;
     private SeekBar sbLevel;
     private SeekBar sbTimeout;
+    private RadioGroup rgMode;
+    private TextView tvModeDesc;
 
     private SharedPreferences prefs;
+    /** refreshState() 会程序化地改单选框，别让那次改动触发"切换模式"。 */
+    private boolean syncingMode;
+
+    /** 单选框顺序 == CurtainPrefs.MODE_* 的取值顺序。 */
+    private static final int[] MODE_RADIO_IDS = {
+            R.id.rb_mode_overlay_focus,
+            R.id.rb_mode_overlay_no_focus,
+            R.id.rb_mode_accessibility
+    };
 
     private final ActivityResultLauncher<String> notifPermission =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(),
@@ -73,6 +85,8 @@ public class MainActivity extends AppCompatActivity {
         btnToggle = findViewById(R.id.btn_toggle);
         sbLevel = findViewById(R.id.sb_level);
         sbTimeout = findViewById(R.id.sb_timeout);
+        rgMode = findViewById(R.id.rg_mode);
+        tvModeDesc = findViewById(R.id.tv_mode_desc);
 
         findViewById(R.id.btn_overlay_perm).setOnClickListener(v -> openOverlaySettings());
         findViewById(R.id.btn_accessibility_perm).setOnClickListener(v ->
@@ -84,6 +98,7 @@ public class MainActivity extends AppCompatActivity {
         applyStatusBarAppearance();
         setupSliders();
         setupToggle();
+        setupMode();
 
         prefs = CurtainPrefs.get(this);
         prefs.registerOnSharedPreferenceChangeListener(prefListener);
@@ -197,8 +212,58 @@ public class MainActivity extends AppCompatActivity {
         tvNotifState.setText(notif ? R.string.state_granted : R.string.state_missing);
         tvNotifState.setTextColor(color(notif ? R.color.state_ok : R.color.state_muted));
 
-        tvMode.setText(accessibility ? R.string.mode_accessibility : R.string.mode_overlay);
+        // 模式：单选框跟着偏好走；底部那行说清楚"实际生效"的是哪一种
+        int selectedMode = CurtainPrefs.mode(this);
+        syncingMode = true;
+        rgMode.check(MODE_RADIO_IDS[selectedMode]);
+        syncingMode = false;
+        tvModeDesc.setText(CurtainPrefs.MODE_DESC_RES[selectedMode]);
+
+        String modeText = getString(modeTextRes(CurtainRouter.effectiveMode(this)));
+        if (CurtainRouter.isFallback(this)) {
+            modeText = modeText + getString(R.string.mode_fallback);
+        }
+        tvMode.setText(modeText);
+
         refreshToggleButton();
+    }
+
+    /** 三种模式共用同一套开关：换模式就重建正在显示的那层幕布。 */
+    private void setupMode() {
+        rgMode.check(MODE_RADIO_IDS[CurtainPrefs.mode(this)]);
+        rgMode.setOnCheckedChangeListener((group, checkedId) -> {
+            if (syncingMode) {
+                return;
+            }
+            int mode = modeForRadio(checkedId);
+            if (mode < 0 || mode == CurtainPrefs.mode(this)) {
+                return;
+            }
+            CurtainPrefs.setMode(this, mode);
+            // 正在跑就按新模式重建；没跑的话下次启动自然生效
+            CurtainRouter.restartForMode(this);
+            refreshState();
+        });
+    }
+
+    private static int modeForRadio(int radioId) {
+        for (int i = 0; i < MODE_RADIO_IDS.length; i++) {
+            if (MODE_RADIO_IDS[i] == radioId) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static int modeTextRes(int effectiveMode) {
+        switch (effectiveMode) {
+            case CurtainPrefs.MODE_ACCESSIBILITY:
+                return R.string.mode_accessibility;
+            case CurtainPrefs.MODE_OVERLAY_NO_FOCUS:
+                return R.string.mode_overlay_no_focus;
+            default:
+                return R.string.mode_overlay_focus;
+        }
     }
 
     private boolean notifGranted() {

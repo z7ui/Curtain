@@ -36,6 +36,32 @@ public final class CurtainPrefs {
     public static final String KEY_TIMEOUT = "timeout";
     public static final String KEY_RUNNING = "running";
 
+    /**
+     * 后端模式（主界面可选三种）。
+     *
+     * 前两种都不需要无障碍，区别只在**要不要抢窗口焦点** —— 抢了系统才理会
+     * 幕布请求的沉浸模式，状态栏才会跟着黑；代价是后面的应用会失去窗口焦点。
+     */
+    public static final String KEY_MODE = "mode";
+    /** 普通悬浮窗 + 抢焦点：能藏状态栏，但后面的应用会失焦。 */
+    public static final int MODE_OVERLAY_FOCUS = 0;
+    /** 普通悬浮窗 + 不抢焦点：不打扰后台，但状态栏会浮在幕布上面。 */
+    public static final int MODE_OVERLAY_NO_FOCUS = 1;
+    /** 无障碍覆盖层：又藏状态栏又不抢焦点，需要系统里开着无障碍。 */
+    public static final int MODE_ACCESSIBILITY = 2;
+    public static final int MODE_DEFAULT = MODE_OVERLAY_FOCUS;
+
+    public static final int[] MODE_TITLE_RES = {
+            R.string.mode_overlay_focus_title,
+            R.string.mode_overlay_no_focus_title,
+            R.string.mode_accessibility_title
+    };
+    public static final int[] MODE_DESC_RES = {
+            R.string.mode_overlay_focus_desc,
+            R.string.mode_overlay_no_focus_desc,
+            R.string.mode_accessibility_desc
+    };
+
     private CurtainPrefs() {
     }
 
@@ -69,6 +95,14 @@ public final class CurtainPrefs {
 
     public static void setRunning(@NonNull Context c, boolean value) {
         get(c).edit().putBoolean(KEY_RUNNING, value).apply();
+    }
+
+    public static int mode(@NonNull Context c) {
+        return clamp(get(c).getInt(KEY_MODE, MODE_DEFAULT), 0, MODE_TITLE_RES.length - 1);
+    }
+
+    public static void setMode(@NonNull Context c, int value) {
+        get(c).edit().putInt(KEY_MODE, clamp(value, 0, MODE_TITLE_RES.length - 1)).apply();
     }
 
     private static int clamp(int value, int lo, int hi) {
