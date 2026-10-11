@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        这些是「相对屏幕边缘」的留白。
+        注意 CurtainOverlay 会把视图画得比屏幕上下左右各大 OVERSIZE_DP（48dp），
+        再整体往左上偏移同样的量。所以 CurtainOverlayView 设置 padding 时
+        会把 48dp 加到四个方向上，否则内容会贴边、甚至被推到屏幕外面。
+        下面这些是补回之后的「可见」留白。
+    -->
+    <dimen name="overlay_side_padding">40dp</dimen>
+    <dimen name="overlay_top_padding">64dp</dimen>
+    <dimen name="overlay_bottom_padding">56dp</dimen>
+</resources>

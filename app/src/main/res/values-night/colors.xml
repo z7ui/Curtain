@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 深色模式下把状态色提亮，否则在深底上看不清 -->
+    <color name="brand_container">#FF2A2440</color>
+    <color name="brand_on_container">#FFE7E3FF</color>
+
+    <color name="state_ok">#FF7FD68A</color>
+    <color name="state_warn">#FFE8AE4A</color>
+    <color name="state_muted">#FF9AA0A6</color>
+</resources>

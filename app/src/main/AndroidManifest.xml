@@ -8,13 +8,15 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
+
     <application
         android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
-        android:label="幕布"
+        android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Curtain"
-        tools:targetApi="34">
+        android:theme="@style/Theme.Curtain">
 
         <activity
             android:name=".MainActivity"
@@ -29,24 +31,44 @@
             android:name=".CurtainLaunchActivity"
             android:exported="false"
             android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
-            android:launchMode="singleInstance" />
+            tools:ignore="CustomSplashScreen" />
 
+        <!--
+            首选后端：无障碍服务。
+            只有它能创建 TYPE_ACCESSIBILITY_OVERLAY 窗口，也只有它能把状态栏 / 导航栏
+            一起藏掉。用户需要在「设置 → 无障碍」里手动开启。
+        -->
+        <service
+            android:name=".CurtainAccessibilityService"
+            android:exported="true"
+            android:label="@string/accessibility_service_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
+        <!-- 降级后端：普通悬浮窗，不需要无障碍，但盖不住状态栏 -->
         <service
             android:name=".CurtainService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="black_screen_overlay" />
+                android:value="Displays a black curtain overlay on top of other apps so the display emits almost no light while the device stays usable, saving power on OLED panels." />
         </service>
 
         <service
             android:name=".CurtainTileService"
+            android:exported="true"
             android:icon="@drawable/ic_curtain"
-            android:label="幕布"
-            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
-            android:exported="true">
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>

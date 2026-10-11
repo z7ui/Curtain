@@ -1,3 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">curtain</string>
+    <string name="app_name">幕布</string>
+    <string name="app_subtitle">把屏幕调暗到只剩一层黑，设备照常运行</string>
+
+    <string name="section_permissions">权限</string>
+    <string name="perm_overlay_title">显示在其他应用上层</string>
+    <string name="perm_accessibility_title">无障碍服务</string>
+    <string name="perm_usage_title">使用情况访问</string>
+    <string name="perm_notif_title">通知</string>
+    <string name="perm_accessibility_desc">开启后幕布可以连状态栏和导航栏一起盖住</string>
+    <string name="perm_usage_desc">用于在幕布上显示当前应用的图标</string>
+    <string name="state_granted">已授权</string>
+    <string name="state_missing">未授权</string>
+    <string name="state_enabled">已开启</string>
+    <string name="state_disabled">未开启</string>
+    <string name="action_grant">去授权</string>
+    <string name="action_enable">去开启</string>
+
+    <string name="section_display">显示</string>
+    <string name="label_level">亮度级别</string>
+    <string name="label_timeout">自动纯黑</string>
+    <string name="desc_level">级别越高越暗。幕布上点左下角的按钮也能改，改完两边会同步。</string>
+    <string name="desc_timeout">这段时间内没有操作，就隐藏全部界面元素，只留纯黑。点一下屏幕即可恢复。</string>
+    <string name="level_format">%1$d 级</string>
+
+    <string name="btn_start">启动幕布</string>
+    <string name="btn_stop">停止幕布</string>
+    <string name="mode_accessibility">当前模式：无障碍覆盖层 —— 状态栏和导航栏会一起隐藏</string>
+    <string name="mode_overlay">当前模式：普通悬浮窗 —— 状态栏图标会浮在幕布上面。开启无障碍服务可以彻底盖住</string>
+    <string name="hint_idle">启动后可以下拉控制中心，用「幕布」磁贴随时开关。</string>
+    <string name="hint_running">幕布正在运行。在幕布上向下拖动中央按钮即可关闭。</string>
+    <string name="need_overlay">请先授予「显示在其他应用上层」权限</string>
+    <string name="cannot_open_settings">无法打开系统设置页面，请手动前往</string>
+    <string name="notif_not_needed">当前系统版本不需要单独授权通知</string>
+
+    <string name="battery_format">%1$d%%</string>
+    <string name="overlay_hint">向下拖动关闭幕布</string>
+    <string name="overlay_release_to_close">松开即可关闭</string>
+    <string name="overlay_gesture_note">左右边缘已屏蔽返回手势 · 上滑仍可返回桌面</string>
+
+    <string name="timeout_15s">15 秒</string>
+    <string name="timeout_30s">30 秒</string>
+    <string name="timeout_1m">1 分钟</string>
+    <string name="timeout_2m">2 分钟</string>
+    <string name="timeout_5m">5 分钟</string>
+    <string name="timeout_10m">10 分钟</string>
+    <string name="timeout_30m">30 分钟</string>
+    <string name="timeout_never">从不</string>
+
+    <string name="tile_active">已开启</string>
+    <string name="tile_inactive">点击开启</string>
+    <string name="notification_title">幕布已开启</string>
+    <string name="notification_text">向下拖动幕布中央的按钮即可关闭</string>
+    <string name="notification_channel_desc">保持幕布悬浮窗运行</string>
+
+    <string name="accessibility_service_label">幕布</string>
+    <string name="accessibility_service_description">在屏幕上绘制一层黑色遮罩，可以连状态栏和导航栏一起盖住。它无法读取你的屏幕内容，也不收集任何信息。</string>
 </resources>

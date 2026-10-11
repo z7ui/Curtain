@@ -1,16 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- 顶部时间、日期、电量 -->
+    <!--
+        注意：所有可见元素都必须放在 top_bar / center_group / bottom_bar 这三个容器里。
+        「自动纯黑」模式就是把这仨一起 GONE，漏一个就会有东西留在黑屏上。
+    -->
+
+    <!-- ============ 顶部：时间 / 日期 / 电量 ============ -->
     <LinearLayout
         android:id="@+id/top_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="24dp"
-        android:gravity="center_vertical">
+        android:baselineAligned="false"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -22,95 +29,137 @@
                 android:id="@+id/tv_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="56sp"
-                android:textColor="#FFFFFF"
-                android:text="13:09" />
+                android:fontFamily="sans-serif-light"
+                android:letterSpacing="-0.02"
+                android:textColor="@color/overlay_text"
+                android:textSize="62sp"
+                tools:text="21:34" />
 
             <TextView
                 android:id="@+id/tv_date"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:textColor="#FFFFFF"
-                android:text="10月6日，周二" />
+                android:layout_marginTop="2dp"
+                android:letterSpacing="0.01"
+                android:textColor="@color/overlay_text_dim"
+                android:textSize="15sp"
+                tools:text="10月11日 周六" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/tv_battery"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="18sp"
-            android:textColor="#FFFFFF"
-            android:background="#33FFFFFF"
-            android:paddingHorizontal="16dp"
-            android:paddingVertical="6dp"
-            android:text="电池 | 66%" />
+            android:background="@drawable/bg_chip"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="14dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="8dp">
+
+            <ImageView
+                android:layout_width="15dp"
+                android:layout_height="15dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_battery"
+                app:tint="@color/overlay_text" />
+
+            <TextView
+                android:id="@+id/tv_battery"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="7dp"
+                android:textColor="@color/overlay_text"
+                android:textSize="14sp"
+                tools:text="66%" />
+        </LinearLayout>
     </LinearLayout>
 
-    <!-- 右侧快捷状态 -->
+    <!-- ============ 中央：关闭手势 ============ -->
     <LinearLayout
-        android:id="@+id/quick_status"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="end|center_vertical"
-        android:orientation="vertical"
-        android:padding="24dp"
-        android:gravity="center">
-
-        <TextView
-            android:id="@+id/tv_level"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="#FFFFFF"
-            android:textSize="16sp"
-            android:padding="16dp"
-            android:text="级别 1" />
-
-        <TextView
-            android:id="@+id/tv_timeout"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="#FFFFFF"
-            android:textSize="16sp"
-            android:padding="16dp"
-            android:text="15 秒" />
-    </LinearLayout>
-
-    <!-- 中间锁图标 + 提示 -->
-    <LinearLayout
-        android:id="@+id/lock_container"
+        android:id="@+id/center_group"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:orientation="vertical"
-        android:gravity="center">
+        android:gravity="center"
+        android:orientation="vertical">
 
         <ImageView
-            android:id="@+id/iv_lock"
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:src="@drawable/ic_lock"
-            android:background="#33FFFFFF"
-            android:padding="20dp" />
+            android:id="@+id/iv_icon"
+            android:layout_width="88dp"
+            android:layout_height="88dp"
+            android:background="@drawable/bg_circle"
+            android:importantForAccessibility="no"
+            android:padding="24dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_lock" />
 
         <TextView
             android:id="@+id/tv_hint"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:textColor="#FFFFFF"
-            android:textSize="18sp"
-            android:text="拖动锁定图标来解锁" />
+            android:layout_marginTop="22dp"
+            android:text="@string/overlay_hint"
+            android:textColor="@color/overlay_text"
+            android:textSize="16sp" />
+
+        <ImageView
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:layout_marginTop="6dp"
+            android:alpha="0.75"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_chevron_down"
+            app:tint="@color/overlay_text_dim" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:alpha="0.55"
+            android:text="@string/overlay_gesture_note"
+            android:textColor="@color/overlay_text"
+            android:textSize="11sp" />
     </LinearLayout>
 
-    <!-- 底部手势提示（方案 3） -->
-    <TextView
-        android:id="@+id/tv_gesture_hint"
+    <!-- ============ 底部：快捷切换 ============ -->
+    <LinearLayout
+        android:id="@+id/bottom_bar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="40dp"
-        android:textColor="#66FFFFFF"
-        android:textSize="12sp"
-        android:text="系统手势仍可上滑返回桌面" />
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/btn_level"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_chip_ripple"
+            android:clickable="true"
+            android:focusable="true"
+            android:paddingStart="22dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="22dp"
+            android:paddingBottom="12dp"
+            android:textColor="@color/overlay_text"
+            android:textSize="15sp"
+            tools:text="5 级" />
+
+        <TextView
+            android:id="@+id/btn_timeout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:background="@drawable/bg_chip_ripple"
+            android:clickable="true"
+            android:focusable="true"
+            android:paddingStart="22dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="22dp"
+            android:paddingBottom="12dp"
+            android:textColor="@color/overlay_text"
+            android:textSize="15sp"
+            tools:text="30 秒" />
+    </LinearLayout>
 </FrameLayout>
