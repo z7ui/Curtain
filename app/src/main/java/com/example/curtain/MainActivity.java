@@ -17,6 +17,7 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.WindowCompat;
@@ -40,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvTimeoutValue;
     private TextView tvMode;
     private TextView tvHint;
+    private TextView tvAboutSubtitle;
 
     private Button btnToggle;
     private SeekBar sbLevel;
@@ -87,6 +89,7 @@ public class MainActivity extends AppCompatActivity {
         sbTimeout = findViewById(R.id.sb_timeout);
         rgMode = findViewById(R.id.rg_mode);
         tvModeDesc = findViewById(R.id.tv_mode_desc);
+        tvAboutSubtitle = findViewById(R.id.tv_about_subtitle);
 
         findViewById(R.id.btn_overlay_perm).setOnClickListener(v -> openOverlaySettings());
         findViewById(R.id.btn_accessibility_perm).setOnClickListener(v ->
@@ -94,6 +97,8 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.btn_usage_perm).setOnClickListener(v ->
                 startActivitySafely(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)));
         findViewById(R.id.btn_notif_perm).setOnClickListener(v -> requestNotification());
+        findViewById(R.id.row_about).setOnClickListener(v -> showAbout());
+        tvAboutSubtitle.setText(getString(R.string.about_subtitle, versionName()));
 
         applyStatusBarAppearance();
         setupSliders();
@@ -272,6 +277,26 @@ public class MainActivity extends AppCompatActivity {
         }
         return ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                 == PackageManager.PERMISSION_GRANTED;
+    }
+
+    /** 读自己的 versionName，取不到就返回 "?"。 */
+    private String versionName() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (Throwable t) {
+            return "?";
+        }
+    }
+
+    /** 关于：一句话说明 + 作者 + 仓库 + 版本。 */
+    private void showAbout() {
+        String version = versionName();
+        String body = getString(R.string.about_body) + "\n\n" + getString(R.string.about_version, version);
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.about_title)
+                .setMessage(body)
+                .setPositiveButton(R.string.about_ok, null)
+                .show();
     }
 
     private void requestNotification() {

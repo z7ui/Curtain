@@ -66,4 +66,10 @@
 
     <string name="accessibility_service_label">幕布</string>
     <string name="accessibility_service_description">在屏幕上绘制一层黑色遮罩，可以连状态栏和导航栏一起盖住。它无法读取你的屏幕内容，也不收集任何信息。</string>
+
+    <string name="about_title">关于</string>
+    <string name="about_subtitle">v%1$s · Deepseek · B站 @z7ui</string>
+    <string name="about_body">一块能盖住整个屏幕的纯黑幕布，设备照常运行。\n\n· 三种模式：抢焦点 / 不抢焦点 / 无障碍（连状态栏一起盖）\n· 亮度级别、定时自动纯黑、控制中心磁贴\n· 不申请网络权限，不收集任何信息\n\n作者  Deepseek · B站 @z7ui\n仓库  github.com/z7ui/Curtain</string>
+    <string name="about_version">版本  %1$s</string>
+    <string name="about_ok">确定</string>
 </resources>
