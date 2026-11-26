@@ -23,8 +23,8 @@ android {
         applicationId = "com.example.curtain"
         minSdk = 27
         targetSdk = 35
-        versionCode = 8
-        versionName = "1.7.1"
+        versionCode = 9
+        versionName = "1.8"
     }
 
     signingConfigs {

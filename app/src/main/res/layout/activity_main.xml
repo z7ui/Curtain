@@ -435,6 +435,48 @@
             android:layout_marginTop="16dp">
 
             <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:id="@+id/row_backup"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <ImageView
+                        style="@style/Widget.Curtain.RowIcon"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_backup" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/Widget.Curtain.RowTitle"
+                            android:text="备份与恢复" />
+
+                        <TextView
+                            style="@style/Widget.Curtain.RowSubtitle"
+                            android:text="导出配置到文件，换机或重装后导入" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginStart="52dp"
+                    android:background="?attr/colorOutlineVariant" />
+
+            <LinearLayout
                 android:id="@+id/row_about"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -464,6 +506,7 @@
                         style="@style/Widget.Curtain.RowSubtitle"
                         tools:text="v1.7 · Deepseek · B站 @z7ui" />
                 </LinearLayout>
+            </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>

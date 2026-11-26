@@ -8,8 +8,11 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
+    <!-- 只用于检查更新、打开博客/源码链接 -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
+        android:name=".App"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -34,6 +37,11 @@
             android:launchMode="singleInstance"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
             tools:ignore="CustomSplashScreen" />
+
+        <activity
+            android:name=".AboutActivity"
+            android:exported="false"
+            android:label="关于" />
 
         <!--
             首选后端：无障碍服务。

@@ -97,7 +97,9 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.btn_usage_perm).setOnClickListener(v ->
                 startActivitySafely(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)));
         findViewById(R.id.btn_notif_perm).setOnClickListener(v -> requestNotification());
-        findViewById(R.id.row_about).setOnClickListener(v -> showAbout());
+        findViewById(R.id.row_about).setOnClickListener(v ->
+                startActivity(new Intent(this, AboutActivity.class)));
+        findViewById(R.id.row_backup).setOnClickListener(v -> showBackupMenu());
         tvAboutSubtitle.setText(getString(R.string.about_subtitle, versionName()));
 
         applyStatusBarAppearance();
@@ -285,6 +287,49 @@ public class MainActivity extends AppCompatActivity {
             return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
         } catch (Throwable t) {
             return "?";
+        }
+    }
+
+    private void showBackupMenu() {
+        new AlertDialog.Builder(this)
+                .setTitle("备份与恢复")
+                .setItems(new String[]{"导出配置到文件", "从文件导入配置"}, (d, which) -> {
+                    if (which == 0) {
+                        Backup.startExport(this);
+                    } else {
+                        new AlertDialog.Builder(this)
+                                .setTitle("导入会覆盖当前配置")
+                                .setMessage("现有的亮度、模式、定时和外观会被文件里的内容替换。建议先导出一份。")
+                                .setPositiveButton("继续导入", (dd, ww) -> Backup.startImport(this))
+                                .setNegativeButton("取消", null)
+                                .show();
+                    }
+                })
+                .show();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode != RESULT_OK || data == null || data.getData() == null) {
+            return;
+        }
+        Uri uri = data.getData();
+        if (requestCode == Backup.REQ_EXPORT) {
+            try {
+                Backup.writeUri(this, uri, Backup.dump(this));
+                Toast.makeText(this, "已导出", Toast.LENGTH_SHORT).show();
+            } catch (Throwable t) {
+                Toast.makeText(this, "导出失败：" + t.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        } else if (requestCode == Backup.REQ_IMPORT) {
+            try {
+                int n = Backup.restore(this, Backup.readUri(this, uri));
+                Toast.makeText(this, "已导入 " + n + " 项配置", Toast.LENGTH_LONG).show();
+                recreate();
+            } catch (Throwable t) {
+                Toast.makeText(this, "导入失败：" + t.getMessage(), Toast.LENGTH_LONG).show();
+            }
         }
     }
 
